@@ -1,9 +1,22 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **/
 package net.therore.pluginloader;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -16,14 +29,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class PluginClassLoader extends ClassLoader {
+/**
+ * @author <a href="mailto:alfredo.diaz@therore.net">Alfredo Diaz</a>
+ */
+public class PluginClassLoader extends URLClassLoader {
 
-    /** Packages that are excluded by default */
     static public final String[] DEFAULT_EXCLUDED_PACKAGES = new String[]
             {"java.", "javax.", "sun.", "oracle.", "javassist.", "org.aspectj.", "net.sf.cglib."};
     static private final String CLASS_FILE_SUFFIX = ".class";
-    static private final int BUFFER_SIZE = 4096;
-    static private final Pattern CLASS_IN_JAR_PATTERN = Pattern.compile("(jar:file:/[^!]+)(!.*)");
 
     static protected final boolean parallelCapableClassLoaderAvailable =
             (getMethodIfAvailable(ClassLoader.class, "registerAsParallelCapable") != null);
@@ -34,14 +47,15 @@ public class PluginClassLoader extends ClassLoader {
         }
     }
 
+    protected final Set<String> LOADED_CLASSES = Collections.synchronizedSet(new HashSet<>());
     protected final Set<String> JAR_URL_PREFIXES;
 
-    public PluginClassLoader(URLClassLoader parent) {
-        super(parent);
+    public PluginClassLoader(URL[] urls) {
+        super(urls, null);
         for (String packageName : DEFAULT_EXCLUDED_PACKAGES) {
             excludePackage(packageName);
         }
-        JAR_URL_PREFIXES = Arrays.stream(parent.getURLs()).map(
+        JAR_URL_PREFIXES = Arrays.stream(urls).map(
                 url -> "jar:"+url.toString()
         ).collect(Collectors.toSet());
 
@@ -81,16 +95,16 @@ public class PluginClassLoader extends ClassLoader {
         this.excludedPackages.add(packageName);
     }
 
-    public void excludeClass(String className) {
-        this.excludedClasses.add(className);
+    public void excludeClass(String name) {
+        this.excludedClasses.add(name);
     }
 
-    protected boolean isExcluded(String className) {
-        if (this.excludedClasses.contains(className)) {
+    protected boolean isExcluded(String name) {
+        if (this.excludedClasses.contains(name)) {
             return true;
         }
         for (String packageName : this.excludedPackages) {
-            if (className.startsWith(packageName)) {
+            if (name.startsWith(packageName)) {
                 return true;
             }
         }
@@ -105,8 +119,9 @@ public class PluginClassLoader extends ClassLoader {
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         if (isEligibleForOverriding(name)) {
-            Class<?> result = loadClassForOverriding(name);
+            Class<?> result = super.findClass(name);
             if (result != null) {
+                LOADED_CLASSES.add(name);
                 if (resolve) {
                     resolveClass(result);
                 }
@@ -116,91 +131,15 @@ public class PluginClassLoader extends ClassLoader {
         return super.loadClass(name, resolve);
     }
 
-    public boolean isEligibleForOverriding(String className) {
-        if (isExcluded(className))
+    public boolean isEligibleForOverriding(String name) {
+        if (isExcluded(name))
             return false;
 
-        String internalName = className.replace('.', '/') + CLASS_FILE_SUFFIX;
-        URL resource = getParent().getResource(internalName);
-
-        if (resource == null)
+        if (LOADED_CLASSES.contains(name))
             return false;
 
-        Matcher matcher = CLASS_IN_JAR_PATTERN.matcher(resource.toString());
-        if (!matcher.matches())
-            return false;
-
-        boolean result = JAR_URL_PREFIXES.contains(matcher.group(1));
-        return result;
+        return findResource(name.replace('.', '/') + CLASS_FILE_SUFFIX) != null;
     }
 
-
-    protected Class<?> loadClassForOverriding(String name) throws ClassNotFoundException {
-        Class<?> result = findLoadedClass(name);
-        if (result == null) {
-            byte[] bytes = loadBytesForClass(name);
-            if (bytes != null) {
-                result = defineClass(name, bytes, 0, bytes.length);
-            }
-        }
-        return result;
-    }
-
-    protected byte[] loadBytesForClass(String name) throws ClassNotFoundException {
-        InputStream is = openStreamForClass(name);
-        if (is == null) {
-            return null;
-        }
-        try {
-            // Load the raw bytes.
-            byte[] bytes = copyToByteArray(is);
-            // Transform if necessary and use the potentially transformed bytes.
-            return bytes;
-        }
-        catch (IOException ex) {
-            throw new ClassNotFoundException("Cannot load resource for class [" + name + "]", ex);
-        }
-    }
-
-    public static int copy(InputStream in, OutputStream out) throws IOException {
-        try {
-            int byteCount = 0;
-            byte[] buffer = new byte[BUFFER_SIZE];
-            int bytesRead = -1;
-            while ((bytesRead = in.read(buffer)) != -1) {
-                out.write(buffer, 0, bytesRead);
-                byteCount += bytesRead;
-            }
-            out.flush();
-            return byteCount;
-        }
-        finally {
-            try {
-                in.close();
-            }
-            catch (IOException ex) {
-            }
-            try {
-                out.close();
-            }
-            catch (IOException ex) {
-            }
-        }
-    }
-
-    public static byte[] copyToByteArray(InputStream in) throws IOException {
-        if (in == null) {
-            return new byte[0];
-        }
-
-        ByteArrayOutputStream out = new ByteArrayOutputStream(BUFFER_SIZE);
-        copy(in, out);
-        return out.toByteArray();
-    }
-
-    protected InputStream openStreamForClass(String name) {
-        String internalName = name.replace('.', '/') + CLASS_FILE_SUFFIX;
-        return getParent().getResourceAsStream(internalName);
-    }
 
 }

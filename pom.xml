@@ -11,13 +11,17 @@
     <description>Therore Plugin Loader</description>
     <url>https://github.com/alfredodiaz/therore-pluginloader</url>
     <properties>
-		<gpg.skip>true</gpg.skip>
-        <distributionManagement.snapshotRepository.id>sonatype-nexus-snapshots</distributionManagement.snapshotRepository.id>
-        <distributionManagement.snapshotRepository.name>Sonatype Nexus Snapshots</distributionManagement.snapshotRepository.name>
-        <distributionManagement.snapshotRepository.url>https://oss.sonatype.org/content/repositories/snapshots</distributionManagement.snapshotRepository.url>
+        <gpg.skip>true</gpg.skip>
+        <distributionManagement.snapshotRepository.id>sonatype-nexus-snapshots
+        </distributionManagement.snapshotRepository.id>
+        <distributionManagement.snapshotRepository.name>Sonatype Nexus Snapshots
+        </distributionManagement.snapshotRepository.name>
+        <distributionManagement.snapshotRepository.url>https://oss.sonatype.org/content/repositories/snapshots
+        </distributionManagement.snapshotRepository.url>
         <distributionManagement.repository.id>sonatype-nexus-staging</distributionManagement.repository.id>
         <distributionManagement.repository.name>Sonatype Nexus Staging</distributionManagement.repository.name>
-        <distributionManagement.repository.url>https://oss.sonatype.org/service/local/staging/deploy/maven2</distributionManagement.repository.url>
+        <distributionManagement.repository.url>https://oss.sonatype.org/service/local/staging/deploy/maven2
+        </distributionManagement.repository.url>
     </properties>
     <inceptionYear>2017</inceptionYear>
     <licenses>
@@ -72,7 +76,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-source-plugin</artifactId>
-		<version>3.0.1</version>
+                <version>3.0.1</version>
                 <configuration>
                     <attach>true</attach>
                 </configuration>
@@ -93,7 +97,7 @@
                     <footer>Copyright 2017 Alfredo Diaz (therore.net)</footer>
                     <windowtitle>${project.name} ${project.version}</windowtitle>
                     <show>protected</show>
-                    <version />
+                    <version/>
                     <!--<author>Alfredo Diaz</author>-->
                     <encoding>UTF-8</encoding>
                     <links>
@@ -106,6 +110,63 @@
                         <goals>
                             <goal>jar</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.gmaven</groupId>
+                <artifactId>gmaven-plugin</artifactId>
+                <version>1.5</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                        <configuration>
+                            <providerSelection>2.0</providerSelection>
+                            <stacktrace>true</stacktrace>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.20</version>
+                <configuration>
+                    <!--<argLine>-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=8000</argLine>-->
+                    <systemProperties>
+                        <property>
+                            <name>MAVEN_BUILD_DIRECTORY</name>
+                            <value>${project.build.directory}</value>
+                        </property>
+                    </systemProperties>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.0.1</version>
+                <executions>
+                    <execution>
+                        <id>unpack-drools</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.drools</groupId>
+                                    <artifactId>drools-distribution</artifactId>
+                                    <version>7.0.0.Final</version>
+                                    <type>zip</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/test-resources</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                            <overWriteReleases>true</overWriteReleases>
+                            <overWriteSnapshots>true</overWriteSnapshots>
+                            <outputAbsoluteArtifactFilename>false</outputAbsoluteArtifactFilename>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -124,6 +185,12 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-all</artifactId>
+            <version>2.4.11</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

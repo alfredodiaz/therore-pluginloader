@@ -15,28 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-package net.therore.pluginloader;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-
-import java.io.File;
-import java.util.Collection;
+package org.drools.examples.banking;
 
 /**
  * @author <a href="mailto:alfredo.diaz@therore.net">Alfredo Diaz</a>
  */
-@Data
-@AllArgsConstructor
-public class Plugin {
+public class RuleRunner {
 
-    private File baseDirectory;
-    private String[] classpathPatterns;
-
-    public Plugin(File baseDirectory, Collection<String> patterns) {
-        this.baseDirectory = baseDirectory;
-        this.classpathPatterns = patterns.toArray(new String[]{});
+    public RuleRunner() {
     }
 
-
+    public void runRules(String[] rules,
+                         Object[] facts) {
+        throw new UnsupportedOperationException();
+    }
 }
