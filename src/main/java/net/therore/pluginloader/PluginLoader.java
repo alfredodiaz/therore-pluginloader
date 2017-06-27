@@ -41,7 +41,6 @@ public class PluginLoader {
     @SneakyThrows
     static private URL[] filesToURLs(File baseDirectory, String[] patterns) {
         return Files.walk(Paths.get(baseDirectory.getAbsolutePath()))
-                .filter(Files::isRegularFile)
                 .filter(path -> stream(patterns)
                         .anyMatch(pattern ->
                                 FILE_SYSTEM.getPathMatcher("glob:" + pattern).matches(path)
