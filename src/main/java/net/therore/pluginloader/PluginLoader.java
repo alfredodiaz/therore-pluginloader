@@ -17,15 +17,13 @@
  **/
 package net.therore.pluginloader;
 
+import lombok.Getter;
 import lombok.SneakyThrows;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.*;
-import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
@@ -39,14 +37,20 @@ public class PluginLoader {
     public static final FileSystem FILE_SYSTEM = FileSystems.getDefault();
 
     @SneakyThrows
-    static private URL[] filesToURLs(File baseDirectory, String[] patterns) {
+    static public URL[] filesToURLs(File baseDirectory, String[] patterns) {
         return Files.walk(Paths.get(baseDirectory.getAbsolutePath()))
                 .filter(path -> stream(patterns)
                         .anyMatch(pattern ->
                                 FILE_SYSTEM.getPathMatcher("glob:" + pattern).matches(path)
                         )
                 )
-                .map(PluginLoader::getUrl).collect(Collectors.toList())
+                .sorted((o1, o2) -> {
+                    int dir1 = o1.toFile().isDirectory() ? 1 : 0;
+                    int dir2 = o2.toFile().isDirectory() ? 1 : 0;
+                    return dir2 - dir1;
+                })
+                .map(PluginLoader::getUrl)
+                .collect(Collectors.toList())
           .toArray(new URL[0]);
     }
 
@@ -55,6 +59,7 @@ public class PluginLoader {
         return file.toUri().toURL();
     }
 
+    @Getter
     private final PluginClassLoader classLoader;
 
     @SneakyThrows
