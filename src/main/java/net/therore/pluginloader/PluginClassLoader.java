@@ -20,11 +20,8 @@ package net.therore.pluginloader;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -32,8 +29,6 @@ import java.util.stream.Collectors;
  */
 public class PluginClassLoader extends URLClassLoader {
 
-    static public final String[] DEFAULT_EXCLUDED_PACKAGES = new String[]
-            {"java.", "javax.", "sun.", "oracle.", "javassist.", "org.aspectj.", "net.sf.cglib."};
     static private final String CLASS_FILE_SUFFIX = ".class";
 
     static protected final boolean parallelCapableClassLoaderAvailable =
@@ -48,10 +43,13 @@ public class PluginClassLoader extends URLClassLoader {
     protected final Set<String> LOADED_CLASSES = Collections.synchronizedSet(new HashSet<>());
     protected final Set<String> JAR_URL_PREFIXES;
 
-    public PluginClassLoader(URL[] urls) {
-        super(urls, null);
-        for (String packageName : DEFAULT_EXCLUDED_PACKAGES) {
-            excludePackage(packageName);
+    private final List<Pattern> excludedClassPatterns = new ArrayList<>();
+
+    public PluginClassLoader(URL[] urls, List<String> excludedClassesPattern) {
+        super(urls, Thread.currentThread().getContextClassLoader());
+
+        for (String pattern : excludedClassesPattern) {
+            excludedClassPatterns.add(Pattern.compile(pattern));
         }
         JAR_URL_PREFIXES = Arrays.stream(urls).map(
                 url -> "jar:"+url.toString()
@@ -83,28 +81,10 @@ public class PluginClassLoader extends URLClassLoader {
         }
     }
 
-    private final Set<String> excludedPackages =
-            Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>(8));
-
-    private final Set<String> excludedClasses =
-            Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>(8));
-
-    public void excludePackage(String packageName) {
-        this.excludedPackages.add(packageName);
-    }
-
-    public void excludeClass(String name) {
-        this.excludedClasses.add(name);
-    }
-
     protected boolean isExcluded(String name) {
-        if (this.excludedClasses.contains(name)) {
-            return true;
-        }
-        for (String packageName : this.excludedPackages) {
-            if (name.startsWith(packageName)) {
+        for (Pattern pattern : excludedClassPatterns) {
+            if (pattern.matcher(name).matches())
                 return true;
-            }
         }
         return false;
     }
@@ -130,10 +110,10 @@ public class PluginClassLoader extends URLClassLoader {
     }
 
     public boolean isEligibleForOverriding(String name) {
-        if (isExcluded(name))
+        if (LOADED_CLASSES.contains(name))
             return false;
 
-        if (LOADED_CLASSES.contains(name))
+        if (isExcluded(name))
             return false;
 
         return findResource(name.replace('.', '/') + CLASS_FILE_SUFFIX) != null;

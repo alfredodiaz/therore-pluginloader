@@ -38,6 +38,7 @@ public class PluginLoaderClassConflictTest {
      */
     @Test
     public void loadingPluginClassVersion() {
+        Class myBakingExample1Class = BankingExample1.class
         Plugin plugin = new Plugin(
                 new File(System.getProperty("MAVEN_BUILD_DIRECTORY", "target") + "/test-resources"),
                 ["**/*.jar"]

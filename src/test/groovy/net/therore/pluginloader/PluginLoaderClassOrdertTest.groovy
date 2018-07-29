@@ -34,7 +34,7 @@ public class PluginLoaderClassOrdertTest {
 
     public findResourcesUsingPLuginLoader(String resourceName) {
         File baseDirectory = new File(System.getProperty("MAVEN_BUILD_DIRECTORY", "target"))
-        Plugin plugin = new Plugin(baseDirectory, ["**/classes","**/test-resources/**/*.jar"] as String[])
+        Plugin plugin = new Plugin(baseDirectory, ["**/classes","**/test-resources/**/*.jar"])
         PluginLoader pluginLoader = new PluginLoader(plugin)
         return Collections.list(pluginLoader.classLoader.getResources(resourceName))
     }

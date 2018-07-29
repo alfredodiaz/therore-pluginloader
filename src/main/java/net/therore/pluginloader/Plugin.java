@@ -21,7 +21,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * @author <a href="mailto:alfredo.diaz@therore.net">Alfredo Diaz</a>
@@ -30,12 +33,32 @@ import java.util.Collection;
 @AllArgsConstructor
 public class Plugin {
 
-    private File baseDirectory;
-    private String[] classpathPatterns;
+    private final File baseDirectory;
+    private final String[] classpathPatterns;
+    private final List<String> DEFAULT_EXCLUDED_CLASSES_PATTERNS = Arrays.asList(new String[]
+            {
+                    "^java\\..*",
+                    "^javax\\..*",
+                    "^sun\\..*",
+                    "^oracle\\..*",
+                    "^javassist\\..*",
+                    "^org\\.aspectj\\..*",
+                    "^net\\.sf\\.cglib\\..*"
+            }
+    );
+    private List<String> excludedClassPatterns = new ArrayList<>();
 
     public Plugin(File baseDirectory, Collection<String> patterns) {
         this.baseDirectory = baseDirectory;
         this.classpathPatterns = patterns.toArray(new String[]{});
+        this.excludedClassPatterns.addAll(DEFAULT_EXCLUDED_CLASSES_PATTERNS);
+    }
+
+    public Plugin(File baseDirectory, Collection<String> patterns, List<String> excludedClassPatterns) {
+        this.baseDirectory = baseDirectory;
+        this.classpathPatterns = patterns.toArray(new String[]{});
+        this.excludedClassPatterns.addAll(DEFAULT_EXCLUDED_CLASSES_PATTERNS);
+        this.excludedClassPatterns.addAll(excludedClassPatterns);
     }
 
 

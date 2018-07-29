@@ -64,7 +64,10 @@ public class PluginLoader {
 
     @SneakyThrows
     public PluginLoader(Plugin plugin) {
-        this.classLoader = new PluginClassLoader(filesToURLs(plugin.getBaseDirectory(), plugin.getClasspathPatterns()));
+        this.classLoader = new PluginClassLoader(
+                filesToURLs(plugin.getBaseDirectory(), plugin.getClasspathPatterns()),
+                plugin.getExcludedClassPatterns()
+        );
     }
 
     @SneakyThrows
